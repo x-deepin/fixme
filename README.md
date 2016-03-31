@@ -32,7 +32,7 @@ VERSION:
 COMMANDS:
    show		[pid ...]
    fix		pid1 [pid2 ...]
-   update	list all knowned problems
+   update	list all known problems
    help, h	Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
