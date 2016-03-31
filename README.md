@@ -36,7 +36,7 @@ COMMANDS:
    help, h	Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
-   --server, -s "http://fixme.deepin.com"	server url for updating and reporting
+   --server, -s "https://fixme.deepin.com"	server url for updating and reporting
    --db, -d "db.json"				database path
    --help, -h					show help
    --version, -v				print the version
