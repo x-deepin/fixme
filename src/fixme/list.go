@@ -28,6 +28,12 @@ func ActionShow(c *cli.Context) {
 	}
 
 	for _, id := range ids {
-		fmt.Println(ps.Render(id))
+		p := ps.Find(id)
+		if p == nil {
+			fmt.Println("Not found", id)
+			continue
+		}
+
+		fmt.Println(p)
 	}
 }

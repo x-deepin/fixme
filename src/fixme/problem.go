@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"github.com/apcera/termtables"
 	"os"
+	"path"
 )
 
 const (
 	EffectUnknown = "?"
 	EffectYes     = "yes"
 	EffectNo      = "no"
+)
+const (
+	ScriptFix    = "fix"
+	ScriptCheck  = "check"
+	ScriptDetect = "detect"
 )
 
 type ProblemSet []Problem
@@ -22,9 +28,7 @@ type Problem struct {
 
 	Effected string
 
-	fixScript    string
-	checkScript  string
-	detectScript string
+	dir string
 }
 
 func (ps ProblemSet) RenderSumary() string {
@@ -36,16 +40,19 @@ func (ps ProblemSet) RenderSumary() string {
 	return t.Render()
 }
 
-func (ps ProblemSet) Render(id string) string {
+func (ps ProblemSet) Find(id string) *Problem {
 	for _, p := range ps {
-		if p.Id != id {
-			continue
+		if p.Id == id {
+			return &p
 		}
-		return fmt.Sprintf("ID: %s\nTitle: %s\nDesc: %s\nEffectMe: %v\n",
-			p.Id, p.Title, p.Description, p.Effected,
-		)
 	}
-	return "not found " + id + "\n"
+	return nil
+}
+
+func (p Problem) String() string {
+	return fmt.Sprintf("ID: %s\nTitle: %s\nDesc: %s\nEffectMe: %v\n",
+		p.Id, p.Title, p.Description, p.Effected,
+	)
 }
 
 func SaveProblems(fpath string, ps ProblemSet) error {
@@ -67,4 +74,8 @@ func LoadProblems(fpath string) (ProblemSet, error) {
 	var r ProblemSet
 	err = json.NewDecoder(f).Decode(&r)
 	return r, err
+}
+
+func (p Problem) Fix() (string, error) {
+	return ShellCode(path.Join(p.dir, ScriptCheck))
 }
