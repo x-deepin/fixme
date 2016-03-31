@@ -8,7 +8,7 @@ import (
 var CMDList = cli.Command{
 	Name:        "show",
 	Usage:       "[pid ...]",
-	Description: "List all knowned problems.",
+	Description: "List all known problems.",
 	Action:      ActionShow,
 	Flags:       []cli.Flag{},
 }
