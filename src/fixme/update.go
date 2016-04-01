@@ -1,8 +1,16 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"fmt"
 	"github.com/codegangsta/cli"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path"
+	"strings"
 )
 
 var CMDUpdate = cli.Command{
@@ -13,14 +21,118 @@ var CMDUpdate = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func updateAction(c *cli.Context) {
-	var ps ProblemSet
-	print("\n")
-	for i := 0; i < 10; i++ {
-		ps = append(ps, GenRandomProblem(i+1))
-		fmt.Printf("\rDownloading the problems of %3s/%d", ps[i].Id, 10)
+func tryReadContentInZip(f *zip.File) (string, error) {
+	r, err := f.Open()
+	if err != nil {
+		return "", err
 	}
-	print("\n")
-	fmt.Println("Done! You can run 'fixme show' to check current problems.")
-	SaveProblems(c.GlobalString("db"), ps)
+	defer r.Close()
+	buf := bytes.NewBuffer(nil)
+	_, err = io.Copy(buf, r)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func ParsePserver(zipFile string) (ProblemSet, error) {
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return nil, err
+	}
+
+	cache := make(map[string]*zip.File)
+	ids := make(map[string]struct{})
+
+	for _, f := range r.File {
+		if f.FileInfo().IsDir() {
+			continue
+		}
+		if path.Base(f.Name) == ScriptFix {
+			ids[path.Dir(f.Name)] = struct{}{}
+		}
+		cache[f.Name] = f
+	}
+	var ps ProblemSet
+	for id := range ids {
+		p := Problem{}
+		p.Id = strings.Join(strings.Split(id, "/")[1:], ".")
+
+		if f, ok := cache[path.Join(id, ScriptFix)]; ok {
+			p.ContentFix, err = tryReadContentInZip(f)
+			if err != nil {
+				fmt.Println("W:", err)
+			}
+		}
+
+		if f, ok := cache[path.Join(id, ScriptCheck)]; ok {
+			p.ContentCheck, err = tryReadContentInZip(f)
+			if err != nil {
+				fmt.Println("W:", err)
+			}
+		}
+
+		if f, ok := cache[path.Join(id, ScriptDetect)]; ok {
+			p.ContentDetect, err = tryReadContentInZip(f)
+			if err != nil {
+				fmt.Println("W:", err)
+			}
+		}
+
+		if f, ok := cache[path.Join(id, ScriptDescription)]; ok {
+			p.Description, err = tryReadContentInZip(f)
+			if err != nil {
+				fmt.Println("W:", err)
+			}
+		}
+		ps = append(ps, p)
+	}
+	return ps, nil
+}
+
+func SaveTo(url string, writer io.Writer) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	_, err = io.Copy(writer, resp.Body)
+	return err
+}
+
+func downloadPServer(url string) (string, error) {
+	f, err := ioutil.TempFile(os.TempDir(), "pserver")
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	err = SaveTo(url, f)
+	if err != nil {
+		return f.Name(), err
+	}
+	return f.Name(), nil
+}
+
+func updateAction(c *cli.Context) {
+	pserver, err := downloadPServer(c.GlobalString("pserver"))
+	if err != nil {
+		fmt.Println("E:", err)
+		return
+	}
+	defer os.Remove(pserver)
+
+	ps, err := ParsePserver(pserver)
+	if err != nil {
+		fmt.Println("E:", err)
+		return
+	}
+
+	fmt.Println("Downloaded:", ps.RenderSumary())
+
+	err = SaveProblems(c.GlobalString("db"), ps)
+	if err != nil {
+		fmt.Println("E:", err)
+	}
 }

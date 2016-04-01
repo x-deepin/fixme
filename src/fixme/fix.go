@@ -10,12 +10,36 @@ var CMDFix = cli.Command{
 	Usage:       "pid1 [pid2 ...]",
 	Description: "Try fixing the problems specified by pids",
 	Action: func(c *cli.Context) {
-		args := c.Args()
-		if len(args) == 0 {
+		ids := c.Args()
+		if len(ids) == 0 {
 			cli.ShowCommandHelp(c, "fix")
 			return
 		}
-		fmt.Printf("Fix %v .... Do nothing. (The function has't implement)\n", args)
+		force := c.Bool("force")
+
+		ps, err := LoadProblems(c.GlobalString("db"))
+		if err != nil || len(ps) == 0 {
+			fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
+			return
+		}
+		for _, id := range ids {
+			p := ps.Find(id)
+			fmt.Println("Running...")
+			fmt.Println("\n```")
+			fmt.Println(p.ContentFix)
+			fmt.Println("```\n")
+
+			if force {
+				fmt.Println(p.Fix())
+			}
+		}
+		fmt.Println("This project is developing, fix is default in dry-run mode.")
+		fmt.Println("You can use -f to destroy your system :)")
 	},
-	Flags: []cli.Flag{},
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "force,f",
+			Usage: "Do what i want.",
+		},
+	},
 }

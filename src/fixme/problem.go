@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/apcera/termtables"
 	"os"
-	"path"
 )
 
 const (
@@ -14,9 +13,10 @@ const (
 	EffectNo      = "no"
 )
 const (
-	ScriptFix    = "fix"
-	ScriptCheck  = "check"
-	ScriptDetect = "detect"
+	ScriptFix         = "fix"
+	ScriptCheck       = "check"
+	ScriptDetect      = "detect"
+	ScriptDescription = "README.md"
 )
 
 type ProblemSet []Problem
@@ -28,7 +28,18 @@ type Problem struct {
 
 	Effected string
 
-	dir string
+	ContentFix    string
+	ContentCheck  string
+	ContentDetect string
+}
+
+func (ps ProblemSet) RenderSumaryTest() string {
+	// TODO: parse the README.md contents
+	var r string
+	for _, p := range ps {
+		r = r + p.String() + "\n\n"
+	}
+	return r
 }
 
 func (ps ProblemSet) RenderSumary() string {
@@ -77,5 +88,5 @@ func LoadProblems(fpath string) (ProblemSet, error) {
 }
 
 func (p Problem) Fix() (string, error) {
-	return ShellCode(path.Join(p.dir, ScriptCheck))
+	return ShellCode(p.ContentFix)
 }

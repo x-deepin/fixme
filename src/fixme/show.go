@@ -17,13 +17,13 @@ func ActionShow(c *cli.Context) {
 	dbPath := c.GlobalString("db")
 	ps, err := LoadProblems(dbPath)
 	if err != nil || len(ps) == 0 {
-		fmt.Println("E: The cache is empty. You need to run 'fixme update' first")
+		fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
 		return
 	}
 
 	ids := c.Args()
 	if len(ids) == 0 {
-		fmt.Println(ps.RenderSumary())
+		fmt.Println(ps.RenderSumaryTest())
 		return
 	}
 
