@@ -35,7 +35,7 @@ func tryReadContentInZip(f *zip.File) (string, error) {
 	return buf.String(), nil
 }
 
-func ParsePserver(zipFile string) (ProblemSet, error) {
+func ParsePSet(zipFile string) (ProblemSet, error) {
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return nil, err
@@ -101,8 +101,8 @@ func SaveTo(url string, writer io.Writer) error {
 	return err
 }
 
-func downloadPServer(url string) (string, error) {
-	f, err := ioutil.TempFile(os.TempDir(), "pserver")
+func downloadPSet(url string) (string, error) {
+	f, err := ioutil.TempFile(os.TempDir(), "pset")
 	if err != nil {
 		return "", err
 	}
@@ -116,14 +116,14 @@ func downloadPServer(url string) (string, error) {
 }
 
 func updateAction(c *cli.Context) {
-	pserver, err := downloadPServer(c.GlobalString("pserver"))
+	pset, err := downloadPSet(c.GlobalString("pset"))
 	if err != nil {
 		fmt.Println("E:", err)
 		return
 	}
-	defer os.Remove(pserver)
+	defer os.Remove(pset)
 
-	ps, err := ParsePserver(pserver)
+	ps, err := ParsePSet(pset)
 	if err != nil {
 		fmt.Println("E:", err)
 		return

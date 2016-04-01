@@ -14,7 +14,7 @@ func main() {
 	app.Commands = []cli.Command{CMDList, CMDFix, CMDUpdate}
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "pserver,s",
+			Name:  "pset,s",
 			Value: "https://github.com/x-deepin/p/archive/master.zip",
 			Usage: "server url for updating and reporting",
 		},
