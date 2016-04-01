@@ -24,6 +24,10 @@ var CMDFix = cli.Command{
 		}
 		for _, id := range ids {
 			p := ps.Find(id)
+			if p == nil {
+				fmt.Println("Not found", id)
+				continue
+			}
 			fmt.Println("Running...")
 			fmt.Println("\n```")
 			fmt.Println(p.ContentFix)
