@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"github.com/codegangsta/cli"
 	"io"
@@ -21,69 +20,85 @@ var CMDUpdate = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func tryReadContentInZip(f *zip.File) (string, error) {
-	r, err := f.Open()
-	if err != nil {
-		return "", err
-	}
-	defer r.Close()
-	buf := bytes.NewBuffer(nil)
-	_, err = io.Copy(buf, r)
-	if err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func ParsePSet(zipFile string) (ProblemSet, error) {
+func uncompressPSet(zipFile string, dest string) error {
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	write := func(name string, z *zip.File) error {
+		os.MkdirAll(path.Dir(name), 0755)
+		f, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
 
-	cache := make(map[string]*zip.File)
-	ids := make(map[string]struct{})
+		r, err := z.Open()
+		if err != nil {
+			return err
+		}
+		defer r.Close()
+
+		_, err = io.Copy(f, r)
+		return err
+	}
+	pathShift := func(name string) string {
+		fs := strings.Split(name, "/")
+		if len(fs) > 1 {
+			return strings.Join(fs[1:], string(os.PathSeparator))
+		}
+		return strings.Join(fs, string(os.PathSeparator))
+	}
 
 	for _, f := range r.File {
-		if f.FileInfo().IsDir() {
+		name := pathShift(f.Name)
+		dname := path.Join(dest, name)
+
+		if name == "functions" {
+			err = write(dname, f)
+			if err != nil {
+				return err
+			}
 			continue
 		}
-		if path.Base(f.Name) == ScriptFix {
-			ids[path.Dir(f.Name)] = struct{}{}
+
+		if f.FileInfo().IsDir() || path.Base(name) != ScriptFix {
+			continue
 		}
-		cache[f.Name] = f
+
+		err := write(dname, f)
+		if err != nil {
+			return err
+		}
 	}
-	var ps ProblemSet
-	for id := range ids {
-		p := Problem{}
-		p.Id = strings.Join(strings.Split(id, "/")[1:], ".")
+	return nil
+}
 
-		if f, ok := cache[path.Join(id, ScriptFix)]; ok {
-			p.ContentFix, err = tryReadContentInZip(f)
-			if err != nil {
-				fmt.Println("W:", err)
+func ParsePSet(dest string) (ProblemSet, error) {
+	var getId func(string) []string
+
+	getId = func(dir string) []string {
+		var r []string
+		fs, err := ioutil.ReadDir(dir)
+		if err != nil {
+			return r
+		}
+		for _, f := range fs {
+			if f.IsDir() {
+				r = append(r, getId(path.Join(dir, f.Name()))...)
+			} else if f.Name() == ScriptFix {
+				r = append(r, path.Join(dir, f.Name()))
 			}
 		}
+		return r
+	}
 
-		if f, ok := cache[path.Join(id, ScriptCheck)]; ok {
-			p.ContentCheck, err = tryReadContentInZip(f)
-			if err != nil {
-				fmt.Println("W:", err)
-			}
-		}
-
-		if f, ok := cache[path.Join(id, ScriptDetect)]; ok {
-			p.ContentDetect, err = tryReadContentInZip(f)
-			if err != nil {
-				fmt.Println("W:", err)
-			}
-		}
-
-		if f, ok := cache[path.Join(id, ScriptDescription)]; ok {
-			p.Description, err = tryReadContentInZip(f)
-			if err != nil {
-				fmt.Println("W:", err)
-			}
+	var ps []*Problem
+	for _, id := range getId(dest) {
+		p, err := NewProblem(dest, id)
+		if err != nil {
+			fmt.Println("E:", err)
+			continue
 		}
 		ps = append(ps, p)
 	}
@@ -123,13 +138,20 @@ func updateAction(c *cli.Context) {
 	}
 	defer os.Remove(pset)
 
-	ps, err := ParsePSet(pset)
+	dest := c.GlobalString("cache")
+	err = uncompressPSet(pset, dest)
 	if err != nil {
 		fmt.Println("E:", err)
 		return
 	}
 
-	fmt.Println("Downloaded:", ps.RenderSumary())
+	ps, err := ParsePSet(dest)
+	if err != nil {
+		fmt.Println("E:", err)
+		return
+	}
+
+	fmt.Println(ps.RenderSumary())
 
 	err = SaveProblems(c.GlobalString("db"), ps)
 	if err != nil {

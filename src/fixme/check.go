@@ -6,14 +6,14 @@ import (
 	"os"
 )
 
-var CMDFix = cli.Command{
-	Name:        "fix",
+var CMDCheck = cli.Command{
+	Name:        "check",
 	Usage:       "pid1 [pid2 ...]",
-	Description: "Try fixing the problems specified by pids",
+	Description: "Check whether the problems effected current system.",
 	Action: func(c *cli.Context) {
 		ids := c.Args()
 		if len(ids) == 0 {
-			cli.ShowCommandHelp(c, "fix")
+			cli.ShowCommandHelp(c, "check")
 			return
 		}
 		force := c.Bool("force")
@@ -29,13 +29,12 @@ var CMDFix = cli.Command{
 				fmt.Println("Not found", id)
 				continue
 			}
-
 			if force {
-				p.Run(os.Stdout, "-f", "--force")
+				p.Run(os.Stdout, "-c", "--force")
 			} else {
 				fmt.Println("Running...")
 				fmt.Println("\n```")
-				p.Run(os.Stdout, "-f", "-v")
+				p.Run(os.Stdout, "-c", "-v")
 				fmt.Println("```\n")
 			}
 		}
