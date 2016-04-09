@@ -25,8 +25,6 @@ const (
 	ScriptDescription = "README.md"
 )
 
-type ProblemSet []*Problem
-
 type Problem struct {
 	Id          string
 	Title       string
@@ -36,33 +34,6 @@ type Problem struct {
 	Effected  string
 	LastCheck time.Time
 	AutoCheck bool
-}
-
-func (ps ProblemSet) RenderSumaryTest() string {
-	// TODO: parse the README.md contents
-	var r string
-	for _, p := range ps {
-		r = r + p.String() + "\n\n"
-	}
-	return r
-}
-
-func (ps ProblemSet) RenderSumary() string {
-	t := termtables.CreateTable()
-	t.AddHeaders("ID", "Title", "EffectMe")
-	for _, p := range ps {
-		t.AddRow(p.Id, p.Title, p.Effected)
-	}
-	return t.Render()
-}
-
-func (ps ProblemSet) Find(id string) *Problem {
-	for _, p := range ps {
-		if p.Id == id {
-			return p
-		}
-	}
-	return nil
 }
 
 func NewProblem(base, fixPath string) (*Problem, error) {
@@ -78,6 +49,7 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	p := &Problem{
 		Id:         id,
 		ScriptPath: fixPath,
+		Effected:   EffectUnknown,
 	}
 	var err error
 	buf := bytes.NewBuffer(nil)
@@ -87,6 +59,17 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	}
 	p.Title = strings.TrimSpace(buf.String())
 	return p, nil
+}
+
+func (p *Problem) Check() bool {
+	err := p.Run(os.Stdout, "-c", "--force")
+	if err != nil {
+		p.Effected = EffectYes
+		return false
+	} else {
+		p.Effected = EffectNo
+		return true
+	}
 }
 
 func (p Problem) Run(output io.Writer, arg ...string) error {
@@ -103,23 +86,50 @@ func (p Problem) String() string {
 	)
 }
 
-func SaveProblems(fpath string, ps ProblemSet) error {
-	f, err := os.Create(fpath)
+type ProblemDB struct {
+	dbPath string
+	cache  map[string]*Problem
+}
+
+func (db ProblemDB) Add(p *Problem) {
+	db.cache[p.Id] = p
+}
+
+func (db ProblemDB) Find(id string) *Problem {
+	return db.cache[id]
+}
+
+func (db ProblemDB) RenderSumary() string {
+	t := termtables.CreateTable()
+	t.AddHeaders("ID", "Title", "EffectMe")
+	for _, p := range db.cache {
+		t.AddRow(p.Id, p.Title, p.Effected)
+	}
+	return t.Render()
+}
+
+func (db ProblemDB) Save() error {
+	f, err := os.Create(db.dbPath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return json.NewEncoder(f).Encode(ps)
+	return json.NewEncoder(f).Encode(db.cache)
 }
 
-func LoadProblems(fpath string) (ProblemSet, error) {
-	f, err := os.Open(fpath)
+func NewProblemDB(dbPath string) (*ProblemDB, error) {
+	f, err := os.Open(dbPath)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	var r ProblemSet
-	err = json.NewDecoder(f).Decode(&r)
-	return r, err
+	db := &ProblemDB{
+		dbPath: dbPath,
+		cache:  make(map[string]*Problem),
+	}
+	return db, json.NewDecoder(f).Decode(&db.cache)
+}
+
+func (db ProblemDB) build(sourceDir string) {
 }

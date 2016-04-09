@@ -14,21 +14,20 @@ var CMDList = cli.Command{
 }
 
 func ActionShow(c *cli.Context) {
-	dbPath := c.GlobalString("db")
-	ps, err := LoadProblems(dbPath)
-	if err != nil || len(ps) == 0 {
+	db, err := NewProblemDB(c.GlobalString("db"))
+	if err != nil || len(db.cache) == 0 {
 		fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
 		return
 	}
 
 	ids := c.Args()
 	if len(ids) == 0 {
-		fmt.Println(ps.RenderSumaryTest())
+		fmt.Println(db.RenderSumary())
 		return
 	}
 
 	for _, id := range ids {
-		p := ps.Find(id)
+		p := db.Find(id)
 		if p == nil {
 			fmt.Println("Not found", id)
 			continue

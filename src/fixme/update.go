@@ -74,7 +74,7 @@ func uncompressPSet(zipFile string, dest string) error {
 	return nil
 }
 
-func ParsePSet(dest string) (ProblemSet, error) {
+func ParsePSet(dest string) ([]*Problem, error) {
 	var getId func(string) []string
 
 	getId = func(dir string) []string {
@@ -151,10 +151,16 @@ func updateAction(c *cli.Context) {
 		return
 	}
 
-	fmt.Println(ps.RenderSumary())
-
-	err = SaveProblems(c.GlobalString("db"), ps)
+	db := &ProblemDB{
+		dbPath: c.GlobalString("db"),
+		cache:  make(map[string]*Problem),
+	}
+	for _, p := range ps {
+		db.Add(p)
+	}
+	err = db.Save()
 	if err != nil {
 		fmt.Println("E:", err)
 	}
+	fmt.Println(db.RenderSumary())
 }

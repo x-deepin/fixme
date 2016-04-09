@@ -18,13 +18,13 @@ var CMDFix = cli.Command{
 		}
 		force := c.Bool("force")
 
-		ps, err := LoadProblems(c.GlobalString("db"))
-		if err != nil || len(ps) == 0 {
+		db, err := NewProblemDB(c.GlobalString("db"))
+		if err != nil || len(db.cache) == 0 {
 			fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
 			return
 		}
 		for _, id := range ids {
-			p := ps.Find(id)
+			p := db.Find(id)
 			if p == nil {
 				fmt.Println("Not found", id)
 				continue
