@@ -33,7 +33,10 @@ type Problem struct {
 
 	Effected  string
 	LastCheck time.Time
-	AutoCheck bool
+
+	AutoCheck bool   `json:"AUTO_CHECK"`
+	AutoFix   bool   ` json:"AUTO_FIX"`
+	Author    string `json:"AUTHOR"`
 }
 
 func NewProblem(base, fixPath string) (*Problem, error) {
@@ -53,12 +56,24 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	}
 	var err error
 	buf := bytes.NewBuffer(nil)
+
+	err = p.Run(buf, "--verify")
+	if buf.String() != "verified fixme script" {
+		return nil, fmt.Errorf("Invalid script(%s):%v", fixPath, err)
+	}
+	buf.Reset()
+
 	err = p.Run(buf, "-t")
 	if err != nil {
 		return nil, err
 	}
 	p.Title = strings.TrimSpace(buf.String())
-	return p, nil
+	buf.Reset()
+
+	p.Run(buf, "-m")
+	err = json.Unmarshal(buf.Bytes(), &p)
+	buf.Reset()
+	return p, err
 }
 
 func (p *Problem) Check() bool {
@@ -101,9 +116,9 @@ func (db ProblemDB) Find(id string) *Problem {
 
 func (db ProblemDB) RenderSumary() string {
 	t := termtables.CreateTable()
-	t.AddHeaders("ID", "Title", "EffectMe")
+	t.AddHeaders("ID", "Title", "EffectMe", "AutoCheck")
 	for _, p := range db.cache {
-		t.AddRow(p.Id, p.Title, p.Effected)
+		t.AddRow(p.Id, p.Title, p.Effected, p.AutoCheck)
 	}
 	return t.Render()
 }

@@ -156,6 +156,9 @@ func updateAction(c *cli.Context) {
 		cache:  make(map[string]*Problem),
 	}
 	for _, p := range ps {
+		if p.AutoCheck {
+			p.Check()
+		}
 		db.Add(p)
 	}
 	err = db.Save()
