@@ -165,5 +165,5 @@ func updateAction(c *cli.Context) {
 	if err != nil {
 		fmt.Println("E:", err)
 	}
-	fmt.Println(db.RenderSumary())
+	fmt.Println(db.RenderSummary())
 }
