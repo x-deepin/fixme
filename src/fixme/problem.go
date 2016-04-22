@@ -114,7 +114,7 @@ func (db ProblemDB) Find(id string) *Problem {
 	return db.cache[id]
 }
 
-func (db ProblemDB) RenderSumary() string {
+func (db ProblemDB) RenderSummary() string {
 	t := termtables.CreateTable()
 	t.AddHeaders("ID", "Title", "EffectMe", "AutoCheck")
 	for _, p := range db.cache {
