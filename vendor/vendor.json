@@ -1,0 +1,37 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "7lCYNEQAn0fr27HfzyVoilyXti0=",
+			"path": "github.com/apcera/termtables",
+			"revision": "21339bac7443d06ed961c062bd71f8acb90358a0",
+			"revisionTime": "2016-05-31T18:46:40Z"
+		},
+		{
+			"checksumSHA1": "ZEGkitRS8y3n2+hrIM5OSUxvqbw=",
+			"path": "github.com/apcera/termtables/locale",
+			"revision": "21339bac7443d06ed961c062bd71f8acb90358a0",
+			"revisionTime": "2016-05-31T18:46:40Z"
+		},
+		{
+			"checksumSHA1": "YoQtMVsekKL5ijF+ghj52ff6cKc=",
+			"path": "github.com/apcera/termtables/term",
+			"revision": "21339bac7443d06ed961c062bd71f8acb90358a0",
+			"revisionTime": "2016-05-31T18:46:40Z"
+		},
+		{
+			"checksumSHA1": "m/6isJ7/hy95kkNI42AUpPsK6Vo=",
+			"path": "github.com/codegangsta/cli",
+			"revision": "9a18ffad6c548ca4d458d4c30a8aa4d181cf92fa",
+			"revisionTime": "2016-05-27T18:54:26Z"
+		},
+		{
+			"checksumSHA1": "+OgOXBoiQ+X+C2dsAeiOHwBIEH0=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "a83829b6f1293c91addabc89d0571c246397bbf4",
+			"revisionTime": "2016-03-01T20:40:22Z"
+		}
+	],
+	"rootPath": "fixme"
+}

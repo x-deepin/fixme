@@ -22,7 +22,7 @@ func ActionShow(c *cli.Context) {
 
 	ids := c.Args()
 	if len(ids) == 0 {
-		fmt.Println(db.RenderSummary())
+		fmt.Println(db.RenderSumary())
 		return
 	}
 
