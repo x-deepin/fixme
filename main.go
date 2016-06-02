@@ -21,12 +21,12 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "cache,c",
-			Value: "/dev/shm/p",
+			Value: "/var/lib/fixme",
 			Usage: "the cache directory to store pset scripts",
 		},
 		cli.StringFlag{
 			Name:  "db,d",
-			Value: "db.json",
+			Value: "/var/lib/fixme/db.json",
 			Usage: "database path",
 		},
 	}
