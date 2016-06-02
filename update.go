@@ -130,25 +130,22 @@ func downloadPSet(url string) (string, error) {
 	return f.Name(), nil
 }
 
-func updateAction(c *cli.Context) {
+func updateAction(c *cli.Context) error {
 	pset, err := downloadPSet(c.GlobalString("pset"))
 	if err != nil {
-		fmt.Println("E:", err)
-		return
+		return err
 	}
 	defer os.Remove(pset)
 
 	dest := c.GlobalString("cache")
 	err = uncompressPSet(pset, dest)
 	if err != nil {
-		fmt.Println("E:", err)
-		return
+		return err
 	}
 
 	ps, err := ParsePSet(dest)
 	if err != nil {
-		fmt.Println("E:", err)
-		return
+		return err
 	}
 
 	db := &ProblemDB{
@@ -163,7 +160,8 @@ func updateAction(c *cli.Context) {
 	}
 	err = db.Save()
 	if err != nil {
-		fmt.Println("E:", err)
+		return err
 	}
 	fmt.Println(db.RenderSumary())
+	return nil
 }

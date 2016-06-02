@@ -10,18 +10,18 @@ var CMDFix = cli.Command{
 	Name:        "fix",
 	Usage:       "pid1 [pid2 ...]",
 	Description: "Try fixing the problems specified by pids",
-	Action: func(c *cli.Context) {
+	Action: func(c *cli.Context) error {
 		ids := c.Args()
 		if len(ids) == 0 {
 			cli.ShowCommandHelp(c, "fix")
-			return
+			return fmt.Errorf("Hasn't any pid")
 		}
 		force := c.Bool("force")
 
 		db, err := NewProblemDB(c.GlobalString("db"))
 		if err != nil || len(db.cache) == 0 {
-			fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
-			return
+			return fmt.Errorf("The cache is empty. You need to run 'fixme update' first %v", err)
+
 		}
 		for _, id := range ids {
 			p := db.Find(id)
@@ -43,6 +43,7 @@ var CMDFix = cli.Command{
 			fmt.Println("This project is developing, fix is default in dry-run mode.")
 			fmt.Println("You can use -f to destroy your system :)")
 		}
+		return nil
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{

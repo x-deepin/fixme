@@ -13,17 +13,16 @@ var CMDList = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func ActionShow(c *cli.Context) {
+func ActionShow(c *cli.Context) error {
 	db, err := NewProblemDB(c.GlobalString("db"))
 	if err != nil || len(db.cache) == 0 {
-		fmt.Println("E: The cache is empty. You need to run 'fixme update' first", err)
-		return
+		return fmt.Errorf("E: The cache is empty. You need to run 'fixme update' first %v", err)
 	}
 
 	ids := c.Args()
 	if len(ids) == 0 {
 		fmt.Println(db.RenderSumary())
-		return
+		return nil
 	}
 
 	for _, id := range ids {
@@ -35,4 +34,5 @@ func ActionShow(c *cli.Context) {
 
 		fmt.Println(p)
 	}
+	return nil
 }
