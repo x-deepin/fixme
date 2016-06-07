@@ -18,9 +18,9 @@ var CMDCheck = cli.Command{
 		}
 		force := c.Bool("force")
 
-		db, err := NewProblemDB(c.GlobalString("db"))
-		if err != nil || len(db.cache) == 0 {
-			return fmt.Errorf("The cache is empty. You need to run 'fixme update' first: %v", err)
+		db, err := LoadProblemDB(c.GlobalString("cache"))
+		if err != nil {
+			return err
 		}
 		for _, id := range ids {
 			p := db.Find(id)

@@ -25,6 +25,8 @@ const (
 	ScriptDescription = "README.md"
 )
 
+const DBName = "db.json"
+
 type Problem struct {
 	Id          string
 	Title       string
@@ -132,10 +134,33 @@ func (db ProblemDB) Save() error {
 	return json.NewEncoder(f).Encode(db.cache)
 }
 
-func NewProblemDB(dbPath string) (*ProblemDB, error) {
+func BuildProblemDB(destDir string) error {
+	ps, err := ParsePSet(destDir)
+	if err != nil {
+		return err
+	}
+
+	dbPath := path.Join(destDir, DBName)
+
+	db := &ProblemDB{
+		dbPath: dbPath,
+		cache:  make(map[string]*Problem),
+	}
+
+	for _, p := range ps {
+		if p.AutoCheck {
+			p.Check()
+		}
+		db.Add(p)
+	}
+	return db.Save()
+}
+
+func LoadProblemDB(destDir string) (*ProblemDB, error) {
+	dbPath := path.Join(destDir, DBName)
 	f, err := os.Open(dbPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("The cache is empty. You need to run 'fixme update' first: %v", err)
 	}
 	defer f.Close()
 
@@ -143,7 +168,11 @@ func NewProblemDB(dbPath string) (*ProblemDB, error) {
 		dbPath: dbPath,
 		cache:  make(map[string]*Problem),
 	}
-	return db, json.NewDecoder(f).Decode(&db.cache)
+	err = json.NewDecoder(f).Decode(&db.cache)
+	if err != nil || len(db.cache) == 0 {
+		return nil, fmt.Errorf("The cache is empty. You need to run 'fixme update' first: %v", err)
+	}
+	return db, nil
 }
 
 func (db ProblemDB) build(sourceDir string) {

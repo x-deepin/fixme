@@ -2,6 +2,8 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
+	"crypto/md5"
 	"fmt"
 	"github.com/codegangsta/cli"
 	"io"
@@ -20,7 +22,66 @@ var CMDUpdate = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func uncompressPSet(zipFile string, dest string) error {
+func updateAction(c *cli.Context) error {
+	dest := c.GlobalString("cache")
+	baseUrl := c.GlobalString("source")
+
+	fingerprint, err := remoteFingerprint(baseUrl)
+	if err != nil {
+		return err
+	}
+
+	os.MkdirAll(dest, 0755)
+
+	err = updateCache(baseUrl, fingerprint, dest)
+	if err != nil {
+		return err
+	}
+
+	err = BuildProblemDB(dest)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Updated to newest PSet.\nYou can use \"fixme show\" to check the result.\n")
+	return nil
+}
+
+func updateCache(baseUrl string, fingerprint string, destDir string) error {
+	const NAME = "master.zip"
+	fpath := path.Join(destDir, NAME)
+	f, err := os.Open(fpath)
+	if err == nil && checkFingerprint(f, fingerprint) {
+		fmt.Printf("cache is newest --> %q\n", fingerprint)
+		f.Close()
+		return nil
+	}
+
+	f, err = os.Create(fpath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	resp, err := http.Get(baseUrl + "/" + fingerprint)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	tee := io.TeeReader(resp.Body, f)
+
+	if !checkFingerprint(tee, fingerprint) {
+		return fmt.Errorf("malform data")
+	}
+
+	err = uncompress(destDir, fpath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func uncompress(destDir string, zipFile string) error {
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return err
@@ -52,7 +113,7 @@ func uncompressPSet(zipFile string, dest string) error {
 
 	for _, f := range r.File {
 		name := pathShift(f.Name)
-		dname := path.Join(dest, name)
+		dname := path.Join(destDir, name)
 
 		if name == "functions" {
 			err = write(dname, f)
@@ -105,63 +166,31 @@ func ParsePSet(dest string) ([]*Problem, error) {
 	return ps, nil
 }
 
-func SaveTo(url string, writer io.Writer) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	_, err = io.Copy(writer, resp.Body)
-	return err
-}
-
-func downloadPSet(url string) (string, error) {
-	f, err := ioutil.TempFile(os.TempDir(), "pset")
+func remoteFingerprint(baseUrl string) (string, error) {
+	resp, err := http.Get(baseUrl + "/index")
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer resp.Body.Close()
 
-	err = SaveTo(url, f)
-	if err != nil {
-		return f.Name(), err
+	r := bufio.NewReader(resp.Body)
+
+	_line, isPrefix, err := r.ReadLine()
+	line := string(_line)
+	if isPrefix {
+		return line, fmt.Errorf("the fingerprint %q is too long", line)
 	}
-	return f.Name(), nil
+	return line, err
 }
 
-func updateAction(c *cli.Context) error {
-	pset, err := downloadPSet(c.GlobalString("pset"))
+func checkFingerprint(r io.Reader, fingerprint string) bool {
+	h := md5.New()
+	_, err := io.Copy(h, r)
 	if err != nil {
-		return err
+		return false
 	}
-	defer os.Remove(pset)
-
-	dest := c.GlobalString("cache")
-	err = uncompressPSet(pset, dest)
-	if err != nil {
-		return err
+	if fingerprint != fmt.Sprintf("%x", h.Sum(nil)) {
+		return false
 	}
-
-	ps, err := ParsePSet(dest)
-	if err != nil {
-		return err
-	}
-
-	db := &ProblemDB{
-		dbPath: c.GlobalString("db"),
-		cache:  make(map[string]*Problem),
-	}
-	for _, p := range ps {
-		if p.AutoCheck {
-			p.Check()
-		}
-		db.Add(p)
-	}
-	err = db.Save()
-	if err != nil {
-		return err
-	}
-	fmt.Println(db.RenderSumary())
-	return nil
+	return true
 }

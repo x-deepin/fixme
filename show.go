@@ -14,9 +14,9 @@ var CMDList = cli.Command{
 }
 
 func ActionShow(c *cli.Context) error {
-	db, err := NewProblemDB(c.GlobalString("db"))
-	if err != nil || len(db.cache) == 0 {
-		return fmt.Errorf("E: The cache is empty. You need to run 'fixme update' first %v", err)
+	db, err := LoadProblemDB(c.GlobalString("cache"))
+	if err != nil {
+		return err
 	}
 
 	ids := c.Args()
