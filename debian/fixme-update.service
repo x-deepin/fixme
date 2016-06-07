@@ -1,0 +1,14 @@
+[Unit]
+Description=Fix urgent bugs in deepin and eventually fix itself
+Documentation=http://github.com/x-deepin/fixme
+After=network-online.target
+
+[Service]
+Type=idle
+ExecStart=/bin/fixme --cache /var/lib/fixme --db /var/lib/fixme/db.json update
+RestartSec=1min
+Restart=on-failure
+
+
+[Install]
+WantedBy=multi-user.target

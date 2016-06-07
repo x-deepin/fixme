@@ -1,0 +1,13 @@
+Source: fixme
+Section: admin
+Priority: extra
+Maintainer: Deepin Sysdev <sysdev@deepin.com>
+Standards-Version: 0.1
+Homepage: https://github.com/x-deepin/fixme
+
+Package: fixme
+Architecture: any
+Depends: ${shlibs:Depends},
+ ${misc:Depends},
+Description: fixme
+ Fix urgent bugs in deepin and eventually fix itself

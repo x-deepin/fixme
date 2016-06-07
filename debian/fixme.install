@@ -1,0 +1,2 @@
+debian/fixme-update.service lib/systemd/system/
+/usr/bin/fixme bin/

@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE=1
+export GO15VENDOREXPERIMENT=1
+
+export DH_GOPKG := github.com/x-deepin/fixme
+%:
+	dh $@ --buildsystem=golang
+
+override_dh_auto_install:
+	dh_auto_install --destdir=`pwd`/debian/tmp
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -f fixme
