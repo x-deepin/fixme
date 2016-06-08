@@ -16,7 +16,7 @@ var CMDCheck = cli.Command{
 			cli.ShowCommandHelp(c, "check")
 			return fmt.Errorf("Hasn't any pid")
 		}
-		force := c.Bool("force")
+		dryRun := c.Bool("dry-run")
 
 		db, err := LoadProblemDB(c.GlobalString("cache"))
 		if err != nil {
@@ -28,28 +28,25 @@ var CMDCheck = cli.Command{
 				fmt.Println("Not found", id)
 				continue
 			}
-			if force {
+			if dryRun {
+				fmt.Println("Running...")
+				fmt.Println("\n```")
+				p.Run(os.Stdout, "-c", "-v")
+				fmt.Println("```\n")
+
+			} else {
 				if !p.Check() {
 					fmt.Printf("Found problem of %q\n", p.Id)
 				}
 				db.Add(p)
 				db.Save()
-			} else {
-				fmt.Println("Running...")
-				fmt.Println("\n```")
-				p.Run(os.Stdout, "-c", "-v")
-				fmt.Println("```\n")
 			}
-		}
-		if !force {
-			fmt.Println("This project is developing, fix is default in dry-run mode.")
-			fmt.Println("You can use -f to destroy your system :)")
 		}
 		return nil
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{
-			Name:  "force,f",
+			Name:  "dry-run,d",
 			Usage: "Do what i want.",
 		},
 	},
