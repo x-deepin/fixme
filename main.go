@@ -25,6 +25,11 @@ func main() {
 			Value: "/var/lib/fixme",
 			Usage: "the cache directory to store scripts",
 		},
+		cli.StringFlag{
+			Name:  "db",
+			Value: os.ExpandEnv("$HOME/.cache/fixme/db.json"),
+			Usage: "the cache directory to store scripts",
+		},
 	}
 
 	var err error

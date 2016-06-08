@@ -25,8 +25,6 @@ const (
 	ScriptDescription = "README.md"
 )
 
-const DBName = "db.json"
-
 type Problem struct {
 	Id          string
 	Title       string
@@ -112,6 +110,9 @@ type ProblemDB struct {
 func (db ProblemDB) Add(p *Problem) {
 	db.cache[p.Id] = p
 }
+func (db ProblemDB) Update(p *Problem) {
+	db.cache[p.Id] = p
+}
 
 func (db ProblemDB) Find(id string) *Problem {
 	return db.cache[id]
@@ -136,6 +137,7 @@ func (db ProblemDB) RenderSumary() string {
 }
 
 func (db ProblemDB) Save() error {
+
 	f, err := os.Create(db.dbPath)
 	if err != nil {
 		return err
@@ -144,14 +146,13 @@ func (db ProblemDB) Save() error {
 	return json.NewEncoder(f).Encode(db.cache)
 }
 
-func BuildProblemDB(destDir string) error {
-	ps, err := ParsePSet(destDir)
+func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
+	ps, err := ParsePSet(cacheDir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	dbPath := path.Join(destDir, DBName)
-
+	os.MkdirAll(path.Dir(dbPath), 0755)
 	db := &ProblemDB{
 		dbPath: dbPath,
 		cache:  make(map[string]*Problem),
@@ -163,14 +164,14 @@ func BuildProblemDB(destDir string) error {
 		}
 		db.Add(p)
 	}
-	return db.Save()
+	fmt.Printf(RED("BuildProblemDB from %q to %q\n"), cacheDir, dbPath)
+	return db, db.Save()
 }
 
-func LoadProblemDB(destDir string) (*ProblemDB, error) {
-	dbPath := path.Join(destDir, DBName)
+func LoadProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 	f, err := os.Open(dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("The cache is empty. You need to run 'fixme update' first: %v", err)
+		return BuildProblemDB(cacheDir, dbPath)
 	}
 	defer f.Close()
 
@@ -178,10 +179,17 @@ func LoadProblemDB(destDir string) (*ProblemDB, error) {
 		dbPath: dbPath,
 		cache:  make(map[string]*Problem),
 	}
+
 	err = json.NewDecoder(f).Decode(&db.cache)
+
+	if len(db.cache) == 0 {
+		db, err = BuildProblemDB(cacheDir, dbPath)
+	}
+
 	if err != nil || len(db.cache) == 0 {
 		return nil, fmt.Errorf("The cache is empty. You need to run 'fixme update' first: %v", err)
 	}
+	fmt.Printf(RED("LoadProblemDB from %q\n"), dbPath)
 	return db, nil
 }
 

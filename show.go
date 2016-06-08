@@ -14,13 +14,14 @@ var CMDList = cli.Command{
 }
 
 func ActionShow(c *cli.Context) error {
-	db, err := LoadProblemDB(c.GlobalString("cache"))
+	db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
 	if err != nil {
 		return err
 	}
 
 	ids := c.Args()
 	if len(ids) == 0 {
+		fmt.Println(RED("Use \"fixme show\" $ID to check the detail information"))
 		fmt.Println(db.RenderSumary())
 		return nil
 	}

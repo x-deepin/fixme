@@ -18,7 +18,7 @@ var CMDFix = cli.Command{
 		}
 		dryRun := c.Bool("dry-run")
 
-		db, err := LoadProblemDB(c.GlobalString("cache"))
+		db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
 		if err != nil {
 			return err
 		}
@@ -33,7 +33,7 @@ var CMDFix = cli.Command{
 				fmt.Println("Running...")
 				fmt.Println("\n```")
 				p.Run(os.Stdout, "-f", "-v")
-				fmt.Println("```\n")
+				fmt.Printf("```\n\n")
 			} else {
 				p.Run(os.Stdout, "-f", "--force")
 			}

@@ -38,10 +38,6 @@ func updateAction(c *cli.Context) error {
 		return err
 	}
 
-	err = BuildProblemDB(dest)
-	if err != nil {
-		return err
-	}
 	fmt.Printf("Updated to newest PSet.\nYou can use \"fixme show\" to check the result.\n")
 	return nil
 }

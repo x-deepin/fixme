@@ -16,7 +16,7 @@ func DoCheck(ps []*Problem, dryRun bool) error {
 		if dryRun {
 			fmt.Println("\n```")
 			p.Run(os.Stdout, "-c", "-v")
-			fmt.Println("```\n")
+			fmt.Printf("```\n\n")
 		} else {
 			if !p.Check() {
 				fmt.Printf("Found problem of %q\n", p.Id)
@@ -31,7 +31,7 @@ var CMDCheck = cli.Command{
 	Usage:       "[pid1 pid2 ...]",
 	Description: "Check whether the problems effected current system.",
 	Action: func(c *cli.Context) error {
-		db, err := LoadProblemDB(c.GlobalString("cache"))
+		db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
 		if err != nil {
 			return err
 		}
@@ -52,12 +52,12 @@ var CMDCheck = cli.Command{
 				ps = append(ps, p)
 			}
 		}
-		for _, p := range ps {
-			db.Add(p)
-		}
-		db.Save()
 
-		return DoCheck(ps, c.Bool("dry-run"))
+		DoCheck(ps, c.Bool("dry-run"))
+		for _, p := range ps {
+			db.Update(p)
+		}
+		return db.Save()
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{
