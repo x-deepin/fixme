@@ -130,15 +130,24 @@ func (db ProblemDB) List() []*Problem {
 
 func (db ProblemDB) RenderSumary() string {
 	t := termtables.CreateTable()
-	t.AddHeaders("ID", "Title", "EffectMe", "LastCheck")
+	t.AddHeaders("ID", "Title", "LastCheck")
+	var ps []string
 	for _, p := range db.List() {
-		lc := p.LastCheck.String()
+		lc := p.LastCheck.Format("2006-01-02 15:04:05")
 		if p.LastCheck.IsZero() {
 			lc = "never"
 		}
-		t.AddRow(p.Id, p.Title, p.Effected, lc)
+		if p.Effected == EffectYes {
+			ps = append(ps, p.Id)
+			t.AddRow(RED(p.Id), p.Title, lc)
+		} else {
+			t.AddRow(p.Id, p.Title, lc)
+		}
 	}
-	return t.Render()
+
+	return t.Render() +
+		fmt.Sprintf("\nTry using the command show below to fix the problmes\n\t%s\n",
+			RED("fixme fix "+strings.Join(ps, " ")))
 }
 
 func (db ProblemDB) Save() error {
