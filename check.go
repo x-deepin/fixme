@@ -6,43 +6,58 @@ import (
 	"os"
 )
 
+func RED(s string) string {
+	return "\033[31m" + s + "\033[0m"
+}
+
+func DoCheck(ps []*Problem, dryRun bool) error {
+	for _, p := range ps {
+		fmt.Printf("Checking problem \"%s\"\n", RED(p.Title))
+		if dryRun {
+			fmt.Println("\n```")
+			p.Run(os.Stdout, "-c", "-v")
+			fmt.Println("```\n")
+		} else {
+			if !p.Check() {
+				fmt.Printf("Found problem of %q\n", p.Id)
+			}
+		}
+	}
+	return nil
+}
+
 var CMDCheck = cli.Command{
 	Name:        "check",
-	Usage:       "pid1 [pid2 ...]",
+	Usage:       "[pid1 pid2 ...]",
 	Description: "Check whether the problems effected current system.",
 	Action: func(c *cli.Context) error {
-		ids := c.Args()
-		if len(ids) == 0 {
-			cli.ShowCommandHelp(c, "check")
-			return fmt.Errorf("Hasn't any pid")
-		}
-		dryRun := c.Bool("dry-run")
-
 		db, err := LoadProblemDB(c.GlobalString("cache"))
 		if err != nil {
 			return err
 		}
-		for _, id := range ids {
-			p := db.Find(id)
-			if p == nil {
-				fmt.Println("Not found", id)
-				continue
-			}
-			if dryRun {
-				fmt.Println("Running...")
-				fmt.Println("\n```")
-				p.Run(os.Stdout, "-c", "-v")
-				fmt.Println("```\n")
 
-			} else {
-				if !p.Check() {
-					fmt.Printf("Found problem of %q\n", p.Id)
+		var ps []*Problem
+
+		ids := c.Args()
+
+		if len(ids) == 0 {
+			ps = db.List()
+		} else {
+			for _, id := range ids {
+				p := db.Find(id)
+				if p == nil {
+					fmt.Println("Not found", id)
+					continue
 				}
-				db.Add(p)
-				db.Save()
+				ps = append(ps, p)
 			}
 		}
-		return nil
+		for _, p := range ps {
+			db.Add(p)
+		}
+		db.Save()
+
+		return DoCheck(ps, c.Bool("dry-run"))
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{

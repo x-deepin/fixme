@@ -5,7 +5,7 @@ After=network-online.target
 
 [Service]
 Type=idle
-ExecStart=/bin/fixme --cache /var/lib/fixme --db /var/lib/fixme/db.json update
+ExecStart=/bin/fixme
 RestartSec=1min
 Restart=on-failure
 

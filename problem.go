@@ -69,7 +69,8 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.Title = strings.TrimSpace(buf.String())
+
+	p.Title = strings.Trim(buf.String(), " \n\r")
 	buf.Reset()
 
 	p.Run(buf, "-m")
@@ -116,10 +117,19 @@ func (db ProblemDB) Find(id string) *Problem {
 	return db.cache[id]
 }
 
+func (db ProblemDB) List() []*Problem {
+	var r []*Problem
+	for _, p := range db.cache {
+		r = append(r, p)
+	}
+
+	return r
+}
+
 func (db ProblemDB) RenderSumary() string {
 	t := termtables.CreateTable()
 	t.AddHeaders("ID", "Title", "EffectMe", "AutoCheck")
-	for _, p := range db.cache {
+	for _, p := range db.List() {
 		t.AddRow(p.Id, p.Title, p.Effected, p.AutoCheck)
 	}
 	return t.Render()
