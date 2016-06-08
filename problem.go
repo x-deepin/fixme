@@ -79,6 +79,7 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 
 func (p *Problem) Check() bool {
 	err := p.Run(os.Stdout, "-c", "--force")
+	p.LastCheck = time.Now()
 	if err != nil {
 		p.Effected = EffectYes
 		return false
@@ -129,9 +130,13 @@ func (db ProblemDB) List() []*Problem {
 
 func (db ProblemDB) RenderSumary() string {
 	t := termtables.CreateTable()
-	t.AddHeaders("ID", "Title", "EffectMe", "AutoCheck")
+	t.AddHeaders("ID", "Title", "EffectMe", "LastCheck")
 	for _, p := range db.List() {
-		t.AddRow(p.Id, p.Title, p.Effected, p.AutoCheck)
+		lc := p.LastCheck.String()
+		if p.LastCheck.IsZero() {
+			lc = "never"
+		}
+		t.AddRow(p.Id, p.Title, p.Effected, lc)
 	}
 	return t.Render()
 }
