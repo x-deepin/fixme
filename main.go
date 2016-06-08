@@ -27,7 +27,13 @@ func main() {
 		},
 	}
 
-	err := app.Run(os.Args)
+	var err error
+	if len(os.Args) == 1 {
+		err = app.Run(append(os.Args, "show"))
+	} else {
+		err = app.Run(os.Args)
+	}
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "E:", err)
 		os.Exit(-1)
