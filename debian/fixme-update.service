@@ -1,11 +1,11 @@
 [Unit]
-Description=Fix urgent bugs in deepin and eventually fix itself
+Description=Update /var/lib/fixme
 Documentation=http://github.com/x-deepin/fixme
 After=network-online.target
 
 [Service]
 Type=idle
-ExecStart=/bin/fixme
+ExecStart=/bin/fixme update
 RestartSec=1min
 Restart=on-failure
 
