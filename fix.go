@@ -33,21 +33,17 @@ var CMDFix = cli.Command{
 		var ps []*Problem
 
 		if c.Bool("autofix") {
-			return fmt.Errorf("Hasn't Implement")
+			ps = db.Search(func(p Problem) bool {
+				return p.AutoFix
+			})
 		} else {
-			for _, id := range c.Args() {
-				p := db.Find(id)
-				if p == nil {
-					return fmt.Errorf("Not found %q", id)
-				}
-				ps = append(ps, p)
-			}
+			ps = db.Search(BuildSearchByIdFn(c.Args()))
 			if len(ps) == 0 {
 				cli.ShowCommandHelp(c, "fix")
 				return fmt.Errorf("Hasn't any pid")
 			}
-			return DoFix(ps, c.Bool("dry-run"))
 		}
+		return DoFix(ps, c.Bool("dry-run"))
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{

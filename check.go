@@ -41,16 +41,9 @@ var CMDCheck = cli.Command{
 		ids := c.Args()
 
 		if len(ids) == 0 {
-			ps = db.List()
+			ps = db.Search(func(Problem) bool { return true })
 		} else {
-			for _, id := range ids {
-				p := db.Find(id)
-				if p == nil {
-					fmt.Println("Not found", id)
-					continue
-				}
-				ps = append(ps, p)
-			}
+			ps = db.Search(BuildSearchByIdFn(c.Args()))
 		}
 
 		DoCheck(ps, c.Bool("dry-run"))

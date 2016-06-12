@@ -20,20 +20,29 @@ func ActionShow(c *cli.Context) error {
 	}
 
 	ids := c.Args()
+
 	if len(ids) == 0 {
 		fmt.Println(RED("Use \"fixme show\" $ID to check the detail information"))
-		fmt.Println(db.RenderSumary())
-		return nil
-	}
 
-	for _, id := range ids {
-		p := db.Find(id)
-		if p == nil {
-			fmt.Println("Not found", id)
-			continue
+		fmt.Println(db.RenderSumary())
+
+		ps := db.Search(func(p Problem) bool { return p.Effected == EffectYes })
+		if len(ps) != 0 {
+			cmd := fmt.Sprintf("\tfixme fix")
+			for _, p := range ps {
+				cmd += fmt.Sprintf(" %s", p.Id)
+			}
+
+			fmt.Printf("\nTry using the command show below to fix the problmes\n\t%s\n",
+				RED(cmd))
 		}
 
-		fmt.Println(p)
+		return nil
+	} else {
+		for _, p := range db.Search(BuildSearchByIdFn(c.Args())) {
+			fmt.Println(p)
+		}
 	}
+
 	return nil
 }

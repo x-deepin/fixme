@@ -125,18 +125,15 @@ type ProblemDB struct {
 	cache  map[string]*Problem
 }
 
-func (db ProblemDB) Add(p *Problem) {
+func (db ProblemDB) Update(p *Problem) error {
+	if _, ok := db.cache[p.Id]; !ok {
+		return fmt.Errorf("There hasn't %q problem in db", p.Id)
+	}
 	db.cache[p.Id] = p
-}
-func (db ProblemDB) Update(p *Problem) {
-	db.cache[p.Id] = p
+	return nil
 }
 
-func (db ProblemDB) Find(id string) *Problem {
-	return db.cache[id]
-}
-
-func (db ProblemDB) List() []*Problem {
+func (db ProblemDB) sort() []*Problem {
 	var r ProblemSet
 
 	for _, p := range db.cache {
@@ -150,7 +147,7 @@ func (db ProblemDB) RenderSumary() string {
 	t := termtables.CreateTable()
 	t.AddHeaders("ID", "Title", "LastCheck")
 	var ps []string
-	for _, p := range db.List() {
+	for _, p := range db.sort() {
 		lc := p.LastCheck.Format("2006-01-02 15:04:05")
 		if p.LastCheck.IsZero() {
 			lc = "never"
@@ -163,9 +160,7 @@ func (db ProblemDB) RenderSumary() string {
 		}
 	}
 
-	return t.Render() +
-		fmt.Sprintf("\nTry using the command show below to fix the problmes\n\t%s\n",
-			RED("fixme fix "+strings.Join(ps, " ")))
+	return t.Render()
 }
 
 func (db ProblemDB) Save() error {
@@ -214,7 +209,7 @@ func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 		if p.AutoCheck {
 			p.Check()
 		}
-		db.Add(p)
+		db.cache[p.Id] = p
 	}
 	fmt.Printf(RED("BuildProblemDB from %q to %q\n"), cacheDir, dbPath)
 	return db, db.Save()
@@ -243,4 +238,27 @@ func LoadProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 	}
 	fmt.Printf(RED("LoadProblemDB from %q\n"), dbPath)
 	return db, nil
+}
+
+func BuildSearchByIdFn(ids []string) func(p Problem) bool {
+	return func(p Problem) bool {
+		for _, id := range ids {
+			if p.Id == id {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+type SearchFn func(Problem) bool
+
+func (db ProblemDB) Search(fn SearchFn) []*Problem {
+	var r []*Problem
+	for _, p := range db.sort() {
+		if fn(*p) {
+			r = append(r, p)
+		}
+	}
+	return r
 }
