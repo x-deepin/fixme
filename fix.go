@@ -6,45 +6,57 @@ import (
 	"os"
 )
 
+func DoFix(ps []*Problem, dryRun bool) error {
+	for _, p := range ps {
+		if dryRun {
+			fmt.Println("Running...")
+			fmt.Println("\n```")
+			p.Run(os.Stdout, "-f", "-v")
+			fmt.Printf("```\n\n")
+		} else {
+			p.Run(os.Stdout, "-f", "--force")
+		}
+	}
+	return nil
+}
+
 var CMDFix = cli.Command{
 	Name:        "fix",
 	Usage:       "pid1 [pid2 ...]",
 	Description: "Try fixing the problems specified by pids",
 	Action: func(c *cli.Context) error {
-		ids := c.Args()
-		if len(ids) == 0 {
-			cli.ShowCommandHelp(c, "fix")
-			return fmt.Errorf("Hasn't any pid")
-		}
-		dryRun := c.Bool("dry-run")
-
 		db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
 		if err != nil {
 			return err
 		}
-		for _, id := range ids {
-			p := db.Find(id)
-			if p == nil {
-				fmt.Println("Not found", id)
-				continue
-			}
 
-			if dryRun {
-				fmt.Println("Running...")
-				fmt.Println("\n```")
-				p.Run(os.Stdout, "-f", "-v")
-				fmt.Printf("```\n\n")
-			} else {
-				p.Run(os.Stdout, "-f", "--force")
-			}
+		var ps []*Problem
 
+		if c.Bool("autofix") {
+			return fmt.Errorf("Hasn't Implement")
+		} else {
+			for _, id := range c.Args() {
+				p := db.Find(id)
+				if p == nil {
+					return fmt.Errorf("Not found %q", id)
+				}
+				ps = append(ps, p)
+			}
+			if len(ps) == 0 {
+				cli.ShowCommandHelp(c, "fix")
+				return fmt.Errorf("Hasn't any pid")
+			}
+			return DoFix(ps, c.Bool("dry-run"))
 		}
-		return nil
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "dry-run,d",
-			Usage: "Do what i want.",
+			Usage: "Do what I want.",
+		},
+		cli.BoolFlag{
+			Name:  "autofix",
+			Usage: "fix all script which AUTO_FIX==true",
 		},
 	},
 }

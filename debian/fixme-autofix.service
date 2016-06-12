@@ -1,0 +1,11 @@
+[Unit]
+Description=Try auto fix system problems
+Documentation=http://github.com/x-deepin/fixme
+After=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/fixme fix --autofix
+
+[Install]
+WantedBy=rescue.target
