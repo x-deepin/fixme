@@ -1,3 +1,4 @@
 debian/fixme-update.service lib/systemd/system/
 debian/fixme-autofix.service lib/systemd/system/
+debian/friendly-recovery/fixme lib/recovery-mode/options/
 /usr/bin/fixme bin/

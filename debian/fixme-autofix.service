@@ -5,6 +5,7 @@ After=sysinit.target
 
 [Service]
 Type=oneshot
+ExecStart=/bin/fixme check
 ExecStart=/bin/fixme fix --autofix
 
 [Install]
