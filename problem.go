@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
@@ -37,6 +38,21 @@ type Problem struct {
 	AutoCheck bool   `json:"AUTO_CHECK"`
 	AutoFix   bool   ` json:"AUTO_FIX"`
 	Author    string `json:"AUTHOR"`
+}
+
+type ProblemSet []*Problem
+
+func (ps ProblemSet) Less(i, j int) bool {
+	if ps[i].Effected == ps[j].Effected {
+		return ps[i].Id > ps[j].Id
+	}
+	return ps[i].Effected > ps[j].Effected
+}
+func (ps ProblemSet) Swap(i, j int) {
+	ps[i], ps[j] = ps[j], ps[i]
+}
+func (ps ProblemSet) Len() int {
+	return len(ps)
 }
 
 func NewProblem(base, fixPath string) (*Problem, error) {
@@ -120,11 +136,12 @@ func (db ProblemDB) Find(id string) *Problem {
 }
 
 func (db ProblemDB) List() []*Problem {
-	var r []*Problem
+	var r ProblemSet
+
 	for _, p := range db.cache {
 		r = append(r, p)
 	}
-
+	sort.Sort(r)
 	return r
 }
 
