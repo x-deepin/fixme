@@ -37,7 +37,6 @@ type Problem struct {
 	LastCheck time.Time
 
 	AutoCheck bool   `json:"AUTO_CHECK"`
-	AutoFix   bool   ` json:"AUTO_FIX"`
 	Author    string `json:"AUTHOR"`
 }
 
@@ -104,6 +103,27 @@ func (p *Problem) Check() bool {
 		p.Effected = EffectNo
 		return true
 	}
+}
+
+func (p *Problem) Fix() error {
+	switch p.Effected {
+	case EffectUnknown:
+		if p.Check() {
+			return nil
+		}
+	case EffectNo:
+		return fmt.Errorf("You don't need to fix %q", p.Id)
+	}
+
+	err := p.Run(os.Stdout, "-f", "--force")
+	if err != nil {
+		return err
+	}
+
+	if !p.Check() {
+		return fmt.Errorf("Fix failed %q", p.Id)
+	}
+	return err
 }
 
 func (p Problem) Run(output io.Writer, arg ...string) error {

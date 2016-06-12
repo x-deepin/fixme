@@ -14,7 +14,10 @@ func DoFix(ps []*Problem, dryRun bool) error {
 			p.Run(os.Stdout, "-f", "-v")
 			fmt.Printf("```\n\n")
 		} else {
-			p.Run(os.Stdout, "-f", "--force")
+			err := p.Fix()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -32,27 +35,27 @@ var CMDFix = cli.Command{
 
 		var ps []*Problem
 
-		if c.Bool("autofix") {
+		ids := c.Args()
+
+		if len(ids) == 0 {
 			ps = db.Search(func(p Problem) bool {
-				return p.AutoFix
+				return p.Effected == EffectYes || p.Effected == EffectUnknown
 			})
 		} else {
 			ps = db.Search(BuildSearchByIdFn(c.Args()))
-			if len(ps) == 0 {
-				cli.ShowCommandHelp(c, "fix")
-				return fmt.Errorf("Hasn't any pid")
-			}
 		}
-		return DoFix(ps, c.Bool("dry-run"))
+
+		err = DoFix(ps, c.Bool("dry-run"))
+		if err != nil {
+			return err
+		}
+
+		return db.Save()
 	},
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "dry-run,d",
 			Usage: "Do what I want.",
-		},
-		cli.BoolFlag{
-			Name:  "autofix",
-			Usage: "fix all script which AUTO_FIX==true",
 		},
 	},
 }

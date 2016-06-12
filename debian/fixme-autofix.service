@@ -6,7 +6,7 @@ After=sysinit.target
 [Service]
 Type=oneshot
 ExecStart=/bin/fixme check
-ExecStart=/bin/fixme fix --autofix
+ExecStart=/bin/fixme fix
 
 [Install]
 WantedBy=rescue.target

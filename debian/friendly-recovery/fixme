@@ -5,5 +5,4 @@ if [ "$1" = "test" ]; then
   exit 0
 fi
 
-/bin/fixme check
-/bin/fixme fix --autofix
+systemctl start fixme-autofix.service
