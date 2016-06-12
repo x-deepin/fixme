@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/codegangsta/cli"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -128,37 +127,6 @@ func uncompress(destDir string, zipFile string) error {
 		}
 	}
 	return nil
-}
-
-func ParsePSet(dest string) ([]*Problem, error) {
-	var getId func(string) []string
-
-	getId = func(dir string) []string {
-		var r []string
-		fs, err := ioutil.ReadDir(dir)
-		if err != nil {
-			return r
-		}
-		for _, f := range fs {
-			if f.IsDir() {
-				r = append(r, getId(path.Join(dir, f.Name()))...)
-			} else if f.Name() == ScriptFix {
-				r = append(r, path.Join(dir, f.Name()))
-			}
-		}
-		return r
-	}
-
-	var ps []*Problem
-	for _, id := range getId(dest) {
-		p, err := NewProblem(dest, id)
-		if err != nil {
-			fmt.Println("E:", err)
-			continue
-		}
-		ps = append(ps, p)
-	}
-	return ps, nil
 }
 
 func remoteFingerprint(baseUrl string) (string, error) {

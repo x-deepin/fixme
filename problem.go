@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/apcera/termtables"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -177,10 +178,30 @@ func (db ProblemDB) Save() error {
 	return json.NewEncoder(f).Encode(db.cache)
 }
 
-func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
-	ps, err := ParsePSet(cacheDir)
+func scanProblemIDs(dir string) []string {
+	var r []string
+	fs, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return r
+	}
+	for _, f := range fs {
+		if f.IsDir() {
+			r = append(r, scanProblemIDs(path.Join(dir, f.Name()))...)
+		} else if f.Name() == ScriptFix {
+			r = append(r, path.Join(dir, f.Name()))
+		}
+	}
+	return r
+
+}
+func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
+	var ps []*Problem
+	for _, id := range scanProblemIDs(cacheDir) {
+		p, err := NewProblem(cacheDir, id)
+		if err != nil {
+			return nil, err
+		}
+		ps = append(ps, p)
 	}
 
 	os.MkdirAll(path.Dir(dbPath), 0755)
@@ -222,7 +243,4 @@ func LoadProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 	}
 	fmt.Printf(RED("LoadProblemDB from %q\n"), dbPath)
 	return db, nil
-}
-
-func (db ProblemDB) build(sourceDir string) {
 }
