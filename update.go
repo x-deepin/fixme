@@ -16,8 +16,7 @@ import (
 
 var CMDUpdate = cli.Command{
 	Name:        "update",
-	Usage:       "list all knowned problems",
-	Description: "What is description?",
+	Description: "Update remote fix scripts from $source to $cache",
 	Action:      updateAction,
 	Flags:       []cli.Flag{},
 }
