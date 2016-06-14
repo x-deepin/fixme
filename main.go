@@ -21,7 +21,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "source,s",
-			Value: "http://packages.deepin.com/deepin/fixme",
+			Value: "http://cdn.packages.deepin.com/deepin/fixme",
 			Usage: "server url for updating and reporting",
 		},
 		cli.StringFlag{
