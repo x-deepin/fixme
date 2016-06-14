@@ -38,6 +38,8 @@ type Problem struct {
 
 	AutoCheck bool   `json:"AUTO_CHECK"`
 	Author    string `json:"AUTHOR"`
+
+	LastLog string
 }
 
 type ProblemSet []*Problem
@@ -73,13 +75,13 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	var err error
 	buf := bytes.NewBuffer(nil)
 
-	err = p.Run(buf, "--verify")
+	err = p.run(buf, "--verify")
 	if buf.String() != "verified fixme script" {
 		return nil, fmt.Errorf("Invalid script(%s):%v", fixPath, err)
 	}
 	buf.Reset()
 
-	err = p.Run(buf, "-t")
+	err = p.run(buf, "-t")
 	if err != nil {
 		return nil, err
 	}
@@ -87,56 +89,123 @@ func NewProblem(base, fixPath string) (*Problem, error) {
 	p.Title = strings.Trim(buf.String(), " \n\r")
 	buf.Reset()
 
-	p.Run(buf, "-m")
+	err = p.run(buf, "-d")
+	if err != nil {
+		return nil, err
+	}
+	p.Description = strings.Trim(buf.String(), " \n\r")
+	buf.Reset()
+
+	p.run(buf, "-m")
 	err = json.Unmarshal(buf.Bytes(), &p)
 	buf.Reset()
 	return p, err
 }
 
-func (p *Problem) Check() bool {
-	err := p.Run(os.Stdout, "-c", "--force")
+func (p *Problem) Check() error {
+	log := bytes.NewBufferString(p.LastLog)
+	err := p.run(log, "-c", "--force")
+	p.LastLog = log.String()
+
 	p.LastCheck = time.Now()
 	if err != nil {
 		p.Effected = EffectYes
-		return false
 	} else {
 		p.Effected = EffectNo
-		return true
 	}
+	return err
 }
 
 func (p *Problem) Fix() error {
 	switch p.Effected {
 	case EffectUnknown:
-		if p.Check() {
+		if p.Check() == nil {
 			return nil
 		}
 	case EffectNo:
 		return fmt.Errorf("You don't need to fix %q", p.Id)
 	}
 
-	err := p.Run(os.Stdout, "-f", "--force")
+	log := bytes.NewBufferString(p.LastLog)
+	err := p.run(log, "-f", "--force")
+	p.LastLog = log.String()
 	if err != nil {
 		return err
 	}
 
-	if !p.Check() {
+	if p.Check() != nil {
 		return fmt.Errorf("Fix failed %q", p.Id)
 	}
 	return err
 }
 
-func (p Problem) Run(output io.Writer, arg ...string) error {
+func (p Problem) run(output io.Writer, arg ...string) error {
 	cmd := exec.Command(p.ScriptPath, arg...)
 	cmd.Dir = path.Dir(p.ScriptPath)
 	cmd.Stdout = output
+	cmd.Stderr = output
 	err := cmd.Run()
 	return err
 }
 
+type Progress struct {
+	ticker *time.Ticker
+	begin  time.Time
+}
+
+func (p *Progress) Start() {
+	v := []string{`/`, `|`, `\`, `-`}
+	i := 0
+	p.ticker = time.NewTicker(time.Millisecond * 200)
+	p.begin = time.Now()
+	go func() {
+		for _ = range p.ticker.C {
+			i = (i + 1) % 4
+			fmt.Printf("\b%s", v[i])
+		}
+	}()
+}
+
+func (p *Progress) Stop() {
+	fmt.Printf("\b %0.2fs", time.Since(p.begin).Seconds())
+	p.ticker.Stop()
+}
+
+type RunAction string
+
+const (
+	Check RunAction = "Checking"
+	Fix             = "Fixing"
+)
+
+func (ps ProblemSet) Run(action RunAction) error {
+	prog := Progress{}
+
+	var e error
+	for i, p := range ps {
+		fmt.Printf("%s %30q (%d/%d)\t", action, p.Id, i+1, len(ps))
+
+		prog.Start()
+		switch action {
+		case Check:
+			e = p.Check()
+		case Fix:
+			e = p.Fix()
+		}
+		prog.Stop()
+
+		if e != nil {
+			fmt.Println("\t", RED("failed"))
+		} else {
+			fmt.Println("\tpassed")
+		}
+	}
+	return nil
+}
+
 func (p Problem) String() string {
-	return fmt.Sprintf("ID: %s\nTitle: %s\nDesc: %s\nEffectMe: %v\n",
-		p.Id, p.Title, p.Description, p.Effected,
+	return fmt.Sprintf("ID: %s\nTitle: %s\nDesc: %s\nEffectMe: %v\nLastLog:\n\n%s",
+		p.Id, p.Title, p.Description, p.Effected, p.LastLog,
 	)
 }
 

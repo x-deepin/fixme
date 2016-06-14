@@ -1,30 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/codegangsta/cli"
-	"os"
 )
-
-func RED(s string) string {
-	return "\033[31m" + s + "\033[0m"
-}
-
-func DoCheck(ps []*Problem, dryRun bool) error {
-	for _, p := range ps {
-		fmt.Printf("Checking problem \"%s\"\n", RED(p.Title))
-		if dryRun {
-			fmt.Println("\n```")
-			p.Run(os.Stdout, "-c", "-v")
-			fmt.Printf("```\n\n")
-		} else {
-			if !p.Check() {
-				fmt.Printf("Found problem of %q\n", p.Id)
-			}
-		}
-	}
-	return nil
-}
 
 var CMDCheck = cli.Command{
 	Name:        "check",
@@ -36,7 +14,7 @@ var CMDCheck = cli.Command{
 			return err
 		}
 
-		var ps []*Problem
+		var ps ProblemSet
 
 		ids := c.Args()
 
@@ -46,16 +24,11 @@ var CMDCheck = cli.Command{
 			ps = db.Search(BuildSearchByIdFn(c.Args()))
 		}
 
-		DoCheck(ps, c.Bool("dry-run"))
+		ps.Run(Check)
+
 		for _, p := range ps {
 			db.Update(p)
 		}
 		return db.Save()
-	},
-	Flags: []cli.Flag{
-		cli.BoolFlag{
-			Name:  "dry-run,d",
-			Usage: "Do what i want.",
-		},
 	},
 }

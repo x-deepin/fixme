@@ -1,27 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/codegangsta/cli"
-	"os"
 )
-
-func DoFix(ps []*Problem, dryRun bool) error {
-	for _, p := range ps {
-		if dryRun {
-			fmt.Println("Running...")
-			fmt.Println("\n```")
-			p.Run(os.Stdout, "-f", "-v")
-			fmt.Printf("```\n\n")
-		} else {
-			err := p.Fix()
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
 
 var CMDFix = cli.Command{
 	Name:        "fix",
@@ -33,7 +14,7 @@ var CMDFix = cli.Command{
 			return err
 		}
 
-		var ps []*Problem
+		var ps ProblemSet
 
 		ids := c.Args()
 
@@ -45,17 +26,11 @@ var CMDFix = cli.Command{
 			ps = db.Search(BuildSearchByIdFn(c.Args()))
 		}
 
-		err = DoFix(ps, c.Bool("dry-run"))
+		err = ps.Run(Fix)
 		if err != nil {
 			return err
 		}
 
 		return db.Save()
-	},
-	Flags: []cli.Flag{
-		cli.BoolFlag{
-			Name:  "dry-run,d",
-			Usage: "Do what I want.",
-		},
 	},
 }
