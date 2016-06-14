@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/cli"
+	"path"
 )
 
 var CMDList = cli.Command{
@@ -14,7 +15,7 @@ var CMDList = cli.Command{
 }
 
 func ActionShow(c *cli.Context) error {
-	db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
+	db, err := LoadProblemDB(path.Join(c.GlobalString("cache"), ScriptDirName), c.GlobalString("db"))
 	if err != nil {
 		return err
 	}

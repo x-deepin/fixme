@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/codegangsta/cli"
+	"path"
 )
 
 var CMDCheck = cli.Command{
@@ -9,7 +10,7 @@ var CMDCheck = cli.Command{
 	Usage:       "[pid1 pid2 ...]",
 	Description: "Check whether the problems effected current system.",
 	Action: func(c *cli.Context) error {
-		db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
+		db, err := LoadProblemDB(path.Join(c.GlobalString("cache"), ScriptDirName), c.GlobalString("db"))
 		if err != nil {
 			return err
 		}

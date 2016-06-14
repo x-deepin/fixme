@@ -2,16 +2,15 @@ package main
 
 import (
 	"archive/zip"
-	"bufio"
-	"crypto/md5"
 	"fmt"
 	"github.com/codegangsta/cli"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"strings"
 )
+
+const ScriptDirName = "scripts"
 
 var CMDUpdate = cli.Command{
 	Name:        "update",
@@ -21,17 +20,17 @@ var CMDUpdate = cli.Command{
 }
 
 func updateAction(c *cli.Context) error {
-	dest := c.GlobalString("cache")
+	cacheDir := c.GlobalString("cache")
 	baseUrl := c.GlobalString("source")
 
-	fingerprint, err := remoteFingerprint(baseUrl)
+	fingerprint, err := remoteCatLine(baseUrl + "/index")
 	if err != nil {
 		return err
 	}
 
-	os.MkdirAll(dest, 0755)
+	os.MkdirAll(cacheDir, 0755)
 
-	err = updateCache(baseUrl, fingerprint, dest)
+	err = updateCache(baseUrl, fingerprint, cacheDir)
 	if err != nil {
 		return err
 	}
@@ -40,39 +39,23 @@ func updateAction(c *cli.Context) error {
 	return nil
 }
 
-func updateCache(baseUrl string, fingerprint string, destDir string) error {
+func updateCache(baseUrl string, fingerprint string, cacheDir string) error {
 	const NAME = "master.zip"
-	fpath := path.Join(destDir, NAME)
-	f, err := os.Open(fpath)
-	if err == nil && checkFingerprint(f, fingerprint) {
+	zipFile := path.Join(cacheDir, NAME)
+
+	if !checkFileChanged(zipFile, fingerprint) {
 		fmt.Printf("cache is newest --> %q\n", fingerprint)
-		f.Close()
 		return nil
 	}
 
-	f, err = os.Create(fpath)
+	err := downloadFile(baseUrl+"/"+fingerprint, zipFile, fingerprint)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	resp, err := http.Get(baseUrl + "/" + fingerprint)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	tee := io.TeeReader(resp.Body, f)
-
-	if !checkFingerprint(tee, fingerprint) {
-		return fmt.Errorf("malform data")
-	}
-
-	err = uncompress(destDir, fpath)
-	if err != nil {
-		return err
-	}
-	return nil
+	scriptDir := path.Join(cacheDir, ScriptDirName)
+	os.RemoveAll(scriptDir)
+	return uncompress(scriptDir, zipFile)
 }
 
 func uncompress(destDir string, zipFile string) error {
@@ -127,33 +110,4 @@ func uncompress(destDir string, zipFile string) error {
 		}
 	}
 	return nil
-}
-
-func remoteFingerprint(baseUrl string) (string, error) {
-	resp, err := http.Get(baseUrl + "/index")
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	r := bufio.NewReader(resp.Body)
-
-	_line, isPrefix, err := r.ReadLine()
-	line := string(_line)
-	if isPrefix {
-		return line, fmt.Errorf("the fingerprint %q is too long", line)
-	}
-	return line, err
-}
-
-func checkFingerprint(r io.Reader, fingerprint string) bool {
-	h := md5.New()
-	_, err := io.Copy(h, r)
-	if err != nil {
-		return false
-	}
-	if fingerprint != fmt.Sprintf("%x", h.Sum(nil)) {
-		return false
-	}
-	return true
 }

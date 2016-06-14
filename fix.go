@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/codegangsta/cli"
+	"path"
 )
 
 var CMDFix = cli.Command{
@@ -9,7 +10,7 @@ var CMDFix = cli.Command{
 	Usage:       "pid1 [pid2 ...]",
 	Description: "Try fixing the problems specified by pids",
 	Action: func(c *cli.Context) error {
-		db, err := LoadProblemDB(c.GlobalString("cache"), c.GlobalString("db"))
+		db, err := LoadProblemDB(path.Join(c.GlobalString("cache"), ScriptDirName), c.GlobalString("db"))
 		if err != nil {
 			return err
 		}

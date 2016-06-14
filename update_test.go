@@ -5,7 +5,7 @@ import (
 )
 
 func TestRemoteFingerprint(t *testing.T) {
-	line, err := remoteFingerprint("http://packages.deepin.com/deepin/fixme")
+	line, err := remoteCatLine("http://packages.deepin.com/deepin/fixme/index")
 	if err != nil {
 		t.Fatal("E:", err)
 	}

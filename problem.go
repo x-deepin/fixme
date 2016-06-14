@@ -278,10 +278,10 @@ func scanProblemIDs(dir string) []string {
 	return r
 
 }
-func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
+func BuildProblemDB(scriptDir string, dbPath string) (*ProblemDB, error) {
 	var ps []*Problem
-	for _, id := range scanProblemIDs(cacheDir) {
-		p, err := NewProblem(cacheDir, id)
+	for _, id := range scanProblemIDs(scriptDir) {
+		p, err := NewProblem(scriptDir, id)
 		if err != nil {
 			return nil, err
 		}
@@ -300,14 +300,14 @@ func BuildProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 		}
 		db.cache[p.Id] = p
 	}
-	fmt.Printf(RED("BuildProblemDB from %q to %q\n"), cacheDir, dbPath)
+	fmt.Printf(RED("BuildProblemDB from %q to %q\n"), scriptDir, dbPath)
 	return db, db.Save()
 }
 
-func LoadProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
+func LoadProblemDB(scriptDir string, dbPath string) (*ProblemDB, error) {
 	f, err := os.Open(dbPath)
 	if err != nil {
-		return BuildProblemDB(cacheDir, dbPath)
+		return BuildProblemDB(scriptDir, dbPath)
 	}
 	defer f.Close()
 
@@ -319,7 +319,7 @@ func LoadProblemDB(cacheDir string, dbPath string) (*ProblemDB, error) {
 	err = json.NewDecoder(f).Decode(&db.cache)
 
 	if len(db.cache) == 0 {
-		db, err = BuildProblemDB(cacheDir, dbPath)
+		db, err = BuildProblemDB(scriptDir, dbPath)
 	}
 
 	if err != nil || len(db.cache) == 0 {
